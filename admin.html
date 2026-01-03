@@ -2,62 +2,58 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard | Hala-Bala</title>
+    <title>Admin Login | Hala-Bala</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet">
     <style>body { font-family: 'Kanit', sans-serif; }</style>
 </head>
-<body class="bg-gray-100 flex">
+<body class="bg-green-900 flex items-center justify-center h-screen">
 
-    <aside class="w-64 bg-slate-900 h-screen sticky top-0 text-white p-6 hidden md:block">
-        <h1 class="text-xl font-bold mb-10 text-green-400">ADMIN PANEL</h1>
-        <nav class="space-y-4">
-            <button onclick="showSection('activity')" class="w-full text-left p-3 hover:bg-slate-800 rounded-xl transition"><i class="fas fa-tasks mr-2"></i> จัดการกิจกรรม</button>
-            <button onclick="showSection('khutbah')" class="w-full text-left p-3 hover:bg-slate-800 rounded-xl transition"><i class="fas fa-book mr-2"></i> จัดการคุตบะฮฺ</button>
-            <button onclick="showSection('settings')" class="w-full text-left p-3 hover:bg-slate-800 rounded-xl transition"><i class="fas fa-cog mr-2"></i> ตั้งค่าเว็บไซต์/สิทธิ์</button>
-        </nav>
-    </aside>
-
-    <main class="flex-1 p-8">
-        <header class="flex justify-between items-center mb-8">
-            <h2 id="section-title" class="text-2xl font-bold text-slate-800">จัดการกิจกรรม</h2>
-            <button onclick="addNewItem()" class="bg-green-600 text-white px-6 py-2 rounded-xl shadow-lg hover:bg-green-700 transition">
-                + เพิ่มข้อมูลใหม่
-            </button>
-        </header>
-
-        <div id="content-area" class="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200">
-            <p class="text-gray-400">กำลังโหลดข้อมูล...</p>
+    <div id="login-box" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-800">ผู้ดูแลระบบ</h2>
+            <p class="text-gray-500">กรุณาเข้าสู่ระบบเพื่อจัดการเว็บไซต์</p>
         </div>
-    </main>
+        <div class="space-y-4">
+            <input id="email" type="email" placeholder="อีเมล" class="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-green-500">
+            <input id="password" type="password" placeholder="รหัสผ่าน" class="w-full p-4 border rounded-2xl outline-none focus:ring-2 focus:ring-green-500">
+            <button onclick="handleLogin()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-700 transition shadow-lg">เข้าสู่ระบบ</button>
+        </div>
+    </div>
 
     <script>
-        // --- ฟังก์ชันตัวอย่างการเพิ่มข้อมูลด้วย SweetAlert2 ---
-        async function addNewItem() {
-            const { value: formValues } = await Swal.fire({
-                title: 'เพิ่มกิจกรรมใหม่',
-                html:
-                    '<input id="swal-input1" class="swal2-input" placeholder="ชื่อกิจกรรม">' +
-                    '<input id="swal-input2" type="date" class="swal2-input">' +
-                    '<input id="swal-input3" class="swal2-input" placeholder="ลิงก์รูปภาพ (URL)">',
-                focusConfirm: false,
-                confirmButtonText: 'บันทึกข้อมูล',
-                confirmButtonColor: '#16a34a',
-                preConfirm: () => {
-                    return [
-                        document.getElementById('swal-input1').value,
-                        document.getElementById('swal-input2').value,
-                        document.getElementById('swal-input3').value
-                    ]
-                }
-            })
+        const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+        const SUPABASE_KEY = "YOUR_ANON_KEY";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            if (formValues) {
-                // โค้ดส่งข้อมูลไป Supabase
-                // const { error } = await _supabase.from('activities').insert([{ title: formValues[0], date: formValues[1], image_url: formValues[2], status: 'ยังไม่ดำเนินการ' }])
-                Swal.fire('สำเร็จ!', 'เพิ่มกิจกรรมเรียบร้อยแล้ว', 'success');
+        async function handleLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                Swal.fire('เข้าสู่ระบบไม่สำเร็จ', error.message, 'error');
+            } else {
+                // ตรวจสอบสิทธิ์ในตาราง admin_users
+                const { data: adminData } = await _supabase.from('admin_users').select('*').eq('email', email).single();
+                
+                if (adminData) {
+                    Swal.fire({
+                        title: 'ยินดีต้อนรับ!',
+                        text: 'กำลังเข้าสู่หน้าจัดการข้อมูล',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        localStorage.setItem('user_permissions', JSON.stringify(adminData.permissions));
+                        window.location.href = 'dashboard.html'; // สร้างหน้าแยกไว้จัดการข้อมูล
+                    });
+                } else {
+                    Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีชื่อในรายชื่อผู้ดูแลระบบ', 'warning');
+                }
             }
         }
     </script>
